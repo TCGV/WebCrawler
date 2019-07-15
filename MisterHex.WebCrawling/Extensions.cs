@@ -1,11 +1,7 @@
-﻿using CsQuery;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Runtime.Caching;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MisterHex.WebCrawling
 {
@@ -26,12 +22,10 @@ namespace MisterHex.WebCrawling
                 }
                 catch
                 {
+
                 }
                 return null;
             }).Where(i => i != null);
-
         }
-
-
     }
 }

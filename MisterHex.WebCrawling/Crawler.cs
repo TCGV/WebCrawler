@@ -14,11 +14,11 @@ namespace MisterHex.WebCrawling
 {
     public class Crawler
     {
-        class ReceivingCrawledUri : ObservableBase<Uri>
+        class ReceivingCrawledUri : ObservableBase<WebPage>
         {
             public int _numberOfLinksLeft = 0;
 
-            private ReplaySubject<Uri> _subject = new ReplaySubject<Uri>();
+            private ReplaySubject<WebPage> _subject = new ReplaySubject<WebPage>();
 
             private readonly Uri _uri;
 
@@ -35,7 +35,7 @@ namespace MisterHex.WebCrawling
 
             }
 
-            protected override IDisposable SubscribeCore(IObserver<Uri> observer)
+            protected override IDisposable SubscribeCore(IObserver<WebPage> observer)
             {
                 var _ = CrawlAsync(_uri);
                 return _subject.Subscribe(observer);
@@ -59,22 +59,33 @@ namespace MisterHex.WebCrawling
                         })
                         .ExecuteAsync(async () => await client.GetStringAsync(uri));
 
-                        result = CQ.Create(html)["a"].Select(i => i.Attributes["href"]).SafeSelect(i => new Uri(i));
+                        var cq = CQ.Create(html);
+                        _subject.OnNext(new WebPage(uri, cq));
+
+                        result = cq["a"].Select(i => i.Attributes["href"]).SafeSelect(CreateUri);
                         result = Filter(result, _filters.ToArray());
 
                         result.ToList().ForEach(async i =>
                         {
                             Interlocked.Increment(ref _numberOfLinksLeft);
-                            _subject.OnNext(i);
                             await CrawlAsync(i);
                         });
                     }
                     catch
-                    { }
+                    {
+                        
+                    }
 
                     if (Interlocked.Decrement(ref _numberOfLinksLeft) == 0)
                         _subject.OnCompleted();
                 }
+            }
+
+            private Uri CreateUri(string i)
+            {
+                if (Uri.IsWellFormedUriString(i, UriKind.Relative))
+                    return new Uri(_uri, i);
+                return new Uri(i);
             }
 
             private static List<Uri> Filter(IEnumerable<Uri> uris, params IUriFilter[] filters)
@@ -88,12 +99,12 @@ namespace MisterHex.WebCrawling
             }
         }
 
-        public IObservable<Uri> Crawl(Uri uri)
+        public IObservable<WebPage> Crawl(Uri uri)
         {
             return new ReceivingCrawledUri(uri, new ExcludeRootUriFilter(uri), new ExternalUriFilter(uri), new AlreadyVisitedUriFilter());
         }
 
-        public IObservable<Uri> Crawl(Uri uri, params IUriFilter[] filters)
+        public IObservable<WebPage> Crawl(Uri uri, params IUriFilter[] filters)
         {
             return new ReceivingCrawledUri(uri, filters);
         }

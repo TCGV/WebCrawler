@@ -14,13 +14,7 @@ namespace MisterHex.WebCrawling
 
         public List<Uri> Filter(IEnumerable<Uri> input)
         {
-            return input.Where(i => getBaseDomain(_root).Equals(getBaseDomain(i))).ToList();
-        }
-
-        public string getBaseDomain(Uri uri)
-        {
-            var tokens = uri.Host.Split('.').Reverse().Take(2).Reverse();
-            return String.Join(".", tokens);
+            return input.Where(i => !i.IsAbsoluteUri || i.Host.Equals(_root.Host)).ToList();
         }
     }
 }

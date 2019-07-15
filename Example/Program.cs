@@ -8,9 +8,13 @@ namespace Example
         static void Main(string[] args)
         {
             Crawler crawler = new Crawler();
-            IObservable<Uri> observable = crawler.Crawl(new Uri("https://dotnet.microsoft.com"));
+            IObservable<WebPage> observable = crawler.Crawl(new Uri("https://dotnet.microsoft.com"));
 
-            observable.Subscribe(onNext: Console.WriteLine, onCompleted: () => Console.WriteLine("Crawling completed"));
+            observable.Subscribe(
+                onNext: w => Console.WriteLine(w.Uri),
+                onError: e => Console.WriteLine(e),
+                onCompleted: () => Console.WriteLine("Crawling completed")
+            );
 
             Console.ReadLine();
         }
