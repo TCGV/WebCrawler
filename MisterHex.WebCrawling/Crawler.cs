@@ -16,7 +16,7 @@ namespace MisterHex.WebCrawling
     {
         class ReceivingCrawledUri : ObservableBase<WebPage>
         {
-            public int _numberOfLinksLeft = 0;
+            private int _numberOfLinksLeft = 0;
 
             private ReplaySubject<WebPage> _subject = new ReplaySubject<WebPage>();
 
@@ -62,7 +62,7 @@ namespace MisterHex.WebCrawling
                         var cq = CQ.Create(html);
                         _subject.OnNext(new WebPage(uri, cq));
 
-                        result = cq["a"].Select(i => i.Attributes["href"]).SafeSelect(CreateUri);
+                        result = cq["a"].Select(i => i.Attributes["href"]).SafeSelect(x => CreateUri(x, uri));
                         result = Filter(result, _filters.ToArray());
 
                         result.ToList().ForEach(async i =>
@@ -81,10 +81,10 @@ namespace MisterHex.WebCrawling
                 }
             }
 
-            private Uri CreateUri(string i)
+            private Uri CreateUri(string i, Uri source)
             {
                 if (Uri.IsWellFormedUriString(i, UriKind.Relative))
-                    return new Uri(_uri, i);
+                    return new Uri(source, i);
                 return new Uri(i);
             }
 
